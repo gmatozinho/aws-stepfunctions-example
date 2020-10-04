@@ -1,0 +1,25 @@
+{
+  "configurations": [
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "aws-stepfunction-example:functions/request.lambdaHandler (nodejs12.x)",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "src",
+        "lambdaHandler": "functions/request.lambdaHandler"
+      },
+      "lambda": {
+        "runtime": "nodejs12.x",
+        "payload": {
+          "json": {
+            "Input": "Teste"
+          }
+        },
+        "environmentVariables": {
+          "ENDPOINT": "endpoint"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "Comment": "A state machine that does request every 30seconds.",
+  "StartAt": "Request",
+  "States": {
+    "Request": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "Request 0sec",
+          "States": {
+            "Request 0sec": {
+              "Type": "Task",
+              "Resource": "${RequestFunctionArn}",
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Wait 30 seconds",
+          "States": {
+            "Wait 30 seconds": {
+              "Type": "Wait",
+              "Seconds": 30,
+              "Next": "Request 30sec"
+            },
+            "Request 30sec": {
+              "Type": "Task",
+              "Resource": "${RequestFunctionArn}",
+              "End": true
+            }
+          }
+        }
+      ],
+
+      "Next": "Done"
+    },
+    "Done": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

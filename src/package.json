@@ -1,0 +1,16 @@
+{
+  "name": "step-functions-example",
+  "version": "1.0.0",
+  "description": "Aws step functions example",
+  "repository": "TODO",
+  "author": "SAM CLI",
+  "license": "MIT",
+  "dependencies": {},
+  "scripts": {
+    "test": "mocha tests/unit/"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "mocha": "^6.1.4"
+  }
+}

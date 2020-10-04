@@ -1,0 +1,126 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  aws-stepfunctions-example
+
+  Example to do two requests in a minute
+
+Resources:
+  LambdaExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: LambdaExecutionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:*"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "states:*"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "sqs:*"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "dynamodb:*"
+                Resource: "*"
+
+  StepFunctionsExampleStateMachine:
+    Type: AWS::Serverless::StateMachine # More info about State Machine Resource: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-statemachine.html
+    Properties:
+      Name: StepFunctionsExampleStateMachine
+      DefinitionUri: cloudformation/statemachine/stepfunction_example.asl.json
+      DefinitionSubstitutions:
+        RequestFunctionArn: !GetAtt RequestFunction.Arn
+        #DDBPutItem: !Sub arn:${AWS::Partition}:states:::dynamodb:putItem
+        #DDBTable: !Ref TransactionTable
+      Events:
+        MinuteProcessRequestSchedule:
+          Type: Schedule # More info about Schedule Event Source: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-statemachine-schedule.html
+          Properties:
+            Name: MinuteRequestSchedule
+            Description: Schedule to run the example state machine every minute
+            Enabled: False # This schedule is disabled by default to avoid incurring charges.
+            Schedule: 'rate(1 minute)'
+      Policies: # Find out more about SAM policy templates: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-policy-templates.html
+        - LambdaInvokePolicy:
+            FunctionName: !Ref RequestFunction
+        #- DynamoDBWritePolicy:
+        #    TableName: !Ref TransactionTable
+
+  RequestFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html
+    Properties:
+      CodeUri: src/
+      Handler: functions/request.lambdaHandler
+      Runtime: nodejs12.x
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Environment:
+        Variables:
+          ENDPOINT: endpoint
+
+  ProcessRequestFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: src/
+      Handler: functions/process-request.lambdaHandler
+      Runtime: nodejs12.x
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+        ProcessRequestQueue:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt ProcessRequestQueue.Arn
+            BatchSize: 5
+            Enabled: false
+      Environment:
+        Variables:          
+          ENDPOINT: endpoint
+
+  ProcessRequestQueueDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 120
+      QueueName: request-service-process-request-dlq
+  ProcessRequestQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 120
+      QueueName: request-service-process-request
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt ProcessRequestQueueDLQ.Arn
+        maxReceiveCount: 1
+
+  
+
+  #TransactionTable:
+  #  Type: AWS::Serverless::SimpleTable # More info about SimpleTable Resource: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-simpletable.html
+  #  Properties:
+  #    PrimaryKey:
+  #      Name: Id
+  #      Type: String
+  #    ProvisionedThroughput:
+  #      ReadCapacityUnits: 1
+  #      WriteCapacityUnits: 1
+
+Outputs:
+  # StepFunctionsExampleStateMachineMinuteSchedule is an implicit Schedule event rule created out of Events key under Serverless::StateMachine
+  # Find out more about other implicit resources you can reference within SAM
+  # https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-specification-generated-resources.html
+  StepFunctionsExampleStateMachineArn:
+    Description: "example state machine ARN"
+    Value: !Ref StepFunctionsExampleStateMachine
