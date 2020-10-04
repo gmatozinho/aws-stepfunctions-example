@@ -1,1 +1,1 @@
-# ifood-polling-service
+# aws-stepfunctions-example
