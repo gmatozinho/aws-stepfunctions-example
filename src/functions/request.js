@@ -1,8 +1,3 @@
-const crypto = require("crypto");
-
-function getRandomInt(max) {
-  return Math.floor(Math.random() * Math.floor(max)) + 1;
-}
 
 /**
  * Sample Lambda function which mocks the operation of buying a random number of shares for a stock.
@@ -17,7 +12,7 @@ function getRandomInt(max) {
 exports.lambdaHandler = async (event, context) => {
   console.log(event);
   try {
-    console.log(process.env.IFOOD_ENDPOINT);
+    console.log(process.env.ENDPOINT);
 
     context.succeed(event);
   } catch (error) {
