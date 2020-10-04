@@ -1,6 +1,6 @@
 'use strict';
 
-const app = require('../../functions/ifood-polling.js');
+const app = require('../../functions/request.js');
 const chai = require('chai');
 const expect = chai.expect;
 var event, context;
